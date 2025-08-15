@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Distribuido - Acceso Móvil</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            line-height: 1.6;
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #4285f4;
+        }
+        
+        .header h1 { 
+            color: #333; 
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .mobile-indicator {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        
+        .connection-info {
+            background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 5px solid #2196F3;
+        }
+        
+        .ip-info {
+            background: linear-gradient(45deg, #fff3e0, #ffe0b2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .connection-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .connection-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .connection-item:hover { transform: translateY(-3px); }
+        .connection-item h4 { color: #1976d2; margin-bottom: 8px; }
+        .connection-item .status { font-weight: bold; font-size: 0.9em; }
+        .status.online { color: #4CAF50; }
+        .status.offline { color: #f44336; }
+        .status.checking { color: #ff9800; }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+        
+        .btn:hover { 
+            background: #3367d6; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(67, 133, 244, 0.3);
+        }
+        
+        .btn:active { transform: translateY(0); }
+        .btn.success { background: #4CAF50; }
+        .btn.warning { background: #ff9800; }
+        .btn.danger { background: #f44336; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .data-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 25px;
+        }
+        
+        .data-card { 
+            background: rgba(250, 250, 250, 0.9);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .data-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title h3 {
+            color: #333;
+            font-size: 1.2em;
+            margin-left: 12px;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            position: relative;
+            background: #ccc;
+        }
+        
+        .status-indicator.success { 
+            background: #4CAF50; 
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+        }
+        
+        .status-indicator.error { 
+            background: #f44336; 
+            box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.3);
+        }
+        
+        .status-indicator.loading { 
+            background: #ff9800; 
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            min-width: auto;
+        }
+        
+        .data-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 120px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+            position: relative;
+        }
+        
+        .data-content.loading { 
+            color: #666; 
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .data-content.error { 
+            color: #d32f2f; 
+            background: linear-gradient(45deg, #ffebee, #ffcdd2);
+            border-left: 4px solid #f44336;
+        }
+        
+        .data-content.success { color: #2e7d32; }
+        
+        .summary-stats {
+            background: linear-gradient(45deg, #263238, #37474f);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            font-family: monospace;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container { padding: 15px; margin: 5px; }
+            .header h1 { font-size: 2em; }
+            .data-grid { grid-template-columns: 1fr; }
+            .controls { justify-content: stretch; }
+            .btn { flex: 1; }
+            .connection-details { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.8em; }
+            .card-header { flex-direction: column; align-items: flex-start; }
+            .card-actions { margin-top: 10px; }
+        }
+        
+        /* Loading animation */
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4285f4;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 Sistema Web Distribuido</h1>
+            <div class="mobile-indicator">📱 Accesible desde dispositivos móviles</div>
+            <div id="device-info" style="font-size: 0.9em; color: #666; margin-top: 10px;"></div>
+        </div>
+        
+        <div class="connection-info">
+            <h3>🔗 Configuración de Red</h3>
+            <div class="ip-info">
+                <strong>🌐 IP Google Cloud:</strong> 35.202.25.241 (Frontend Puerto 80 + Backend Puerto 5000)<br>
+                <strong>🏠 IP Casa (Docker):</strong> 187.189.173.145 (Puertos 3307, 3308)
+            </div>
+            <div class="connection-details">
+                <div class="connection-item">
+                    <h4>🖥️ Frontend</h4>
+                    <div class="status online">✅ Activo (Puerto 80)</div>
+                    <small>35.202.25.241:80</small>
+                </div>
+                <div class="connection-item">
+                    <h4>⚙️ Backend API</h4>
+                    <div id="backend-status" class="status checking">🔄 Verificando...</div>
+                    <small>35.202.25.241:5000</small>
+                </div>
+                <div class="connection-item">
+                    <h4>🐳 Docker DB1</h4>
+                    <div id="docker1-status" class="status checking">🔄 Verificando...</div>
+                    <small>187.189.173.145:3307</small>
+                </div>
+                <div class="connection-item">
+                    <h4>🐳 Docker DB2</h4>
+                    <div id="docker2-status" class="status checking">🔄 Verificando...</div>
+                    <small>187.189.173.145:3308</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn success" onclick="loadAllData()" id="refresh-all">
+                🔄 Actualizar Todo
+            </button>
+            <button class="btn" onclick="loadSistemaInfo()">
+                ☁️ Info GCP
+            </button>
+            <button class="btn" onclick="loadProductos()">
+                🛍️ Productos
+            </button>
+            <button class="btn" onclick="loadUsuarios()">
+                👥 Usuarios
+            </button>
+            <button class="btn" onclick="testConnection()">
+                🔧 Test API
+            </button>
+            <button class="btn warning" onclick="clearAllData()">
+                🗑️ Limpiar
+            </button>
+            <button class="btn" onclick="toggleAutoRefresh()" id="auto-refresh-btn">
+                ⏰ Auto-refresh: ON
+            </button>
+        </div>
+        
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div id="status-sistema" class="status-indicator loading"></div>
+                        <h3>☁️ Sistema GCP</h3>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-small" onclick="loadSistemaInfo()">🔄</button>
+                    </div>
+                </div>
+                <div id="data-sistema" class="data-content loading">
+                    <div class="loading-spinner"></div>
+                    Conectando a base de datos local...
+                </div>
+            </div>
+            
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div id="status-productos" class="status-indicator loading"></div>
+                        <h3>🛍️ Productos Docker</h3>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-small" onclick="loadProductos()">🔄</button>
+                    </div>
+                </div>
+                <div id="data-productos" class="data-content loading">
+                    <div class="loading-spinner"></div>
+                    Conectando a Docker container puerto 3307...
+                </div>
+            </div>
+            
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div id="status-usuarios" class="status-indicator loading"></div>
+                        <h3>👥 Usuarios Docker</h3>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-small" onclick="loadUsuarios()">🔄</button>
+                    </div>
+                </div>
+                <div id="data-usuarios" class="data-content loading">
+                    <div class="loading-spinner"></div>
+                    Conectando a Docker container puerto 3308...
+                </div>
+            </div>
+        </div>
+        
+        <div class="summary-stats">
+            <h3>📊 Estadísticas del Sistema</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div id="stat-connections" class="stat-number">0</div>
+                    <div class="stat-label">Conexiones Exitosas</div>
+                </div>
+                <div class="stat-item">
+                    <div id="stat-errors" class="stat-number">0</div>
+                    <div class="stat-label">Errores</div>
+                </div>
+                <div class="stat-item">
+                    <div id="stat-lastupdate" class="stat-number">--:--</div>
+                    <div class="stat-label">Última Actualización</div>
+                </div>
+                <div class="stat-item">
+                    <div id="stat-uptime" class="stat-number">0s</div>
+                    <div class="stat-label">Tiempo Activo</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🌐 Configuración con tus IPs específicas
+        const API_BASE_URL = 'http://35.202.25.241:5000/api';
+        const GCP_IP = '35.202.25.241';
+        const HOME_IP = '187.189.173.145';
+        
+        // Variables globales
+        let connectionCount = 0;
+        let errorCount = 0;
+        let startTime = Date.now();
+        let autoRefreshEnabled = true;
+        let autoRefreshInterval;
+        
+        // Detectar información del dispositivo
+        function detectDeviceInfo() {
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenSize: `${screen.width}x${screen.height}`,
+                viewport: `${window.innerWidth}x${window.innerHeight}`,
+                isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                isOnline: navigator.onLine
+            };
+            
+            document.getElementById('device-info').innerHTML = 
+                `📱 ${info.isMobile ? 'Móvil' : 'Escritorio'} | 🌐 ${info.isOnline ? 'En línea' : 'Sin conexión'} | 📏 ${info.viewport}`;
+            
+            return info;
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            const now = new Date();
+            const uptime = Math.floor((Date.now() - startTime) / 1000);
+            
+            document.getElementById('stat-connections').textContent = connectionCount;
+            document.getElementById('stat-errors').textContent = errorCount;
+            document.getElementById('stat-lastupdate').textContent = now.toLocaleTimeString();
+            document.getElementById('stat-uptime').textContent = `${uptime}s`;
+        }
+        
+        // Actualizar estado de conexión
+        function updateConnectionStatus(service, status) {
+            const statusEl = document.getElementById(`${service}-status`);
+            if (statusEl) {
+                statusEl.className = `status ${status}`;
+                statusEl.innerHTML = status === 'online' ? '✅ Conectado' : 
+                                   status === 'offline' ? '❌ Sin conexión' : 
+                                   '🔄 Verificando...';
+            }
+        }
+        
+        // Configurar estado de indicador
+        function setStatus(statusId, dataId, status, content) {
+            const indicator = document.getElementById(statusId);
+            const dataEl = document.getElementById(dataId);
+            
+            if (indicator) {
+                indicator.className = `status-indicator ${status}`;
+            }
+            
+            if (dataEl) {
+                dataEl.className = `data-content ${status}`;
+                dataEl.innerHTML = content;
+            }
+        }
+        
+        // Test de conectividad de la API
+        async function testConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/test-connection`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                alert(`✅ Conexión exitosa!\n\nServidor: ${GCP_IP}\nDocker Target: ${HOME_IP}\nTimestamp: ${data.timestamp}`);
+                updateConnectionStatus('backend', 'online');
+            } catch (error) {
+                alert(`❌ Error de conexión:\n${error.message}\n\nVerificar:\n- API corriendo en puerto 5000\n- Firewall GCP\n- Red del dispositivo`);
+                updateConnectionStatus('backend', 'offline');
+            }
+        }
+        
+        // Verificar estado del backend
+        async function checkBackendHealth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    updateConnectionStatus('backend', 'online');
+                    return true;
+                } else {
+                    updateConnectionStatus('backend', 'offline');
+                    return false;
+                }
+            } catch (error) {
+                updateConnectionStatus('backend', 'offline');
+                return false;
+            }
+        }
+        
+        // Cargar información del sistema GCP
+        async function loadSistemaInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sistema-info`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                setStatus('status-sistema', 'data-sistema', 'success', JSON.stringify(data, null, 2));
+                connectionCount++;
+                updateConnectionStatus('backend', 'online');
+            } catch (error) {
+                setStatus('status-sistema', 'data-sistema', 'error', 
+                    `❌ Error: ${error.message}\n\n🔧 Verificaciones:\n✓ API Backend corriendo en ${GCP_IP}:5000\n✓ Firewall GCP permite puerto 5000\n✓ Conexión a internet activa\n\nComandos para verificar en GCP:\n• sudo systemctl status nginx\n• ps aux | grep python\n• curl localhost:5000/api/health`);
+                errorCount++;
+                updateConnectionStatus('backend', 'offline');
+            }
+            updateStats();
+        }
+        
+        // Cargar productos desde Docker
+        async function loadProductos() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/docker-productos`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                setStatus('status-productos', 'data-productos', 'success', JSON.stringify(data, null, 2));
+                connectionCount++;
+                updateConnectionStatus('docker1', 'online');
+            } catch (error) {
+                setStatus('status-productos', 'data-productos', 'error', 
+                    `❌ Error: ${error.message}\n\n🔧 Verificaciones Docker DB1:\n✓ Contenedor mysql_container_1 activo\n✓ Port forwarding: ${HOME_IP}:3307\n✓ Firewall local permite puerto 3307\n\nComandos para verificar en casa:\n• docker ps | grep mysql_container_1\n• mysql -h 127.0.0.1 -P 3307 -u root -p\n• sudo ufw status | grep 3307\n• curl ifconfig.me`);
+                errorCount++;
+                updateConnectionStatus('docker1', 'offline');
+            }
+            updateStats();
+        }
+        
+        // Cargar usuarios desde Docker
+        async function loadUsuarios() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/docker-usuarios`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                setStatus('status-usuarios', 'data-usuarios', 'success', JSON.stringify(data, null, 2));
+                connectionCount++;
+                updateConnectionStatus('docker2', 'online');
+            } catch (error) {
+                setStatus('status-usuarios', 'data-usuarios', 'error', 
+                    `❌ Error: ${error.message}\n\n🔧 Verificaciones Docker DB2:\n✓ Contenedor mysql_container_2 activo\n✓ Port forwarding: ${HOME_IP}:3308\n✓ Firewall local permite puerto 3308\n\nComandos para verificar en casa:\n• docker ps | grep mysql_container_2\n• mysql -h 127.0.0.1 -P 3308 -u root -p\n• sudo ufw status | grep 3308\n• netstat -tlnp | grep :3308`);
+                errorCount++;
+                updateConnectionStatus('docker2', 'offline');
+            }
+            updateStats();
+        }
+        
+        // Cargar todos los datos
+        async function loadAllData() {
+            const refreshBtn = document.getElementById('refresh-all');
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '🔄 Cargando...';
+            
+            console.log(`Iniciando carga completa - GCP: ${GCP_IP}, Casa: ${HOME_IP}`);
+            
+            // Verificar backend primero
+            const backendOk = await checkBackendHealth();
+            
+            if (backendOk) {
+                await Promise.all([
+                    loadSistemaInfo(),
+                    loadProductos(),
+                    loadUsuarios()
+                ]);
+            } else {
+                setStatus('status-sistema', 'data-sistema', 'error', `❌ Backend API no disponible en ${GCP_IP}:5000`);
+                setStatus('status-productos', 'data-productos', 'error', '❌ No se puede conectar a API');
+                setStatus('status-usuarios', 'data-usuarios', 'error', '❌ No se puede conectar a API');
+            }
+            
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '🔄 Actualizar Todo';
+            updateStats();
+        }
+        
+        // Limpiar todos los datos
+        function clearAllData() {
+            ['sistema', 'productos', 'usuarios'].forEach(type => {
+                setStatus(`status-${type}`, `data-${type}`, 'loading', 
+                    '<div class="loading-spinner"></div>Datos limpiados - Listo para nueva consulta...');
+            });
+            
+            connectionCount = 0;
+            errorCount = 0;
+            updateStats();
+        }
+        
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('auto-refresh-btn');
+            
+            if (autoRefreshEnabled) {
+                btn.innerHTML = '⏰ Auto-refresh: ON';
+                btn.className = 'btn success';
+                startAutoRefresh();
+            } else {
+                btn.innerHTML = '⏰ Auto-refresh: OFF';
+                btn.className = 'btn';
+                stopAutoRefresh();
+            }
+        }
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                if (autoRefreshEnabled) {
+                    console.log('Auto-refresh ejecutándose...');
+                    loadAllData();
+                }
+            }, 60000); // Cada 60 segundos
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log(`Sistema iniciando - Frontend: ${window.location.host}, API: ${API_BASE_URL}`);
+            detectDeviceInfo();
+            updateStats();
+            
+            // Cargar datos inicial después de 2 segundos
+            setTimeout(loadAllData, 2000);
+            
+            // Iniciar auto-refresh
+            startAutoRefresh();
+            
+            // Actualizar info del dispositivo cada 30 segundos
+            setInterval(detectDeviceInfo, 30000);
+            setInterval(updateStats, 5000);
+        });
+        
+        // Manejar cambios de conectividad
+        window.addEventListener('online', () => {
+            console.log('Conexión a internet restablecida');
+            detectDeviceInfo();
+            loadAllData();
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('Conexión a internet perdida');
+            detectDeviceInfo();
+        });
+    </script>
+</body>
+</html>
